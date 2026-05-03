@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('workflow_versions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('workflow_definition_id')->constrained()->cascadeOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('workflow_definition_id')->constrained()->cascadeOnDelete();
             $table->integer('version');
             $table->json('dag_json');
             $table->timestamps();
