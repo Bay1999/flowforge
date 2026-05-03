@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('step_runs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('workflow_run_id')->constrained()->cascadeOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('workflow_run_id')->constrained()->cascadeOnDelete();
             $table->string('step_id');
             $table->string('status')->default('pending');
             $table->timestamp('started_at')->nullable();

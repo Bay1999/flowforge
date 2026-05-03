@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('workflow_definitions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('tenant_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
             $table->json('dag_json');
             $table->integer('version')->default(1);
-            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
+            $table->foreignUlid('created_by')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
             $table->softDeletes();
         });

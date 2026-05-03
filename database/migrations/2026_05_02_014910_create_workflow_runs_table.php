@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('workflow_runs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('workflow_definition_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('workflow_definition_id')->constrained()->cascadeOnDelete();
+            $table->foreignUlid('tenant_id')->constrained()->cascadeOnDelete();
             $table->string('status')->default('pending'); // pending, running, completed, failed, cancelled
             $table->string('triggered_by')->nullable(); // manual, schedule, webhook
             $table->timestamp('started_at')->nullable();

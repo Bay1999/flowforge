@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('execution_logs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('workflow_run_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('step_run_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('workflow_run_id')->constrained()->cascadeOnDelete();
+            $table->foreignUlid('step_run_id')->nullable()->constrained()->cascadeOnDelete();
             $table->string('level')->default('info');
             $table->text('message');
             $table->timestamp('timestamp')->useCurrent();

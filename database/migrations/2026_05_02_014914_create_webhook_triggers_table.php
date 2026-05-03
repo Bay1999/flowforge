@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('webhook_triggers', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('workflow_definition_id')->constrained()->cascadeOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('workflow_definition_id')->constrained()->cascadeOnDelete();
             $table->string('secret_token')->unique();
             $table->timestamps();
         });
