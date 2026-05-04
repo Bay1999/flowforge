@@ -33,6 +33,8 @@ class WorkflowController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'dag_json' => 'required|array',
+            'trigger_type' => 'nullable|string|in:manual,scheduled,webhook',
+            'trigger_config' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -62,6 +64,8 @@ class WorkflowController extends Controller
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
             'dag_json' => 'sometimes|array',
+            'trigger_type' => 'nullable|string|in:manual,scheduled,webhook',
+            'trigger_config' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -100,6 +104,30 @@ class WorkflowController extends Controller
             return ApiResponse::success($run, 'Workflow triggered successfully', 202)->toResponse();
         } catch (Exception $e) {
             return ApiResponse::error($e->getMessage(), null, 500)->toResponse();
+        }
+    }
+
+    public function versions($id)
+    {
+        $versions = $this->service->getVersions($id);
+        return ApiResponse::success($versions)->toResponse();
+    }
+
+    public function rollback(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'version_id' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return ApiResponse::error('Validation Error', $validator->errors(), 422)->toResponse();
+        }
+
+        try {
+            $workflow = $this->service->rollback($id, $request->version_id);
+            return ApiResponse::success($workflow, 'Workflow rolled back successfully')->toResponse();
+        } catch (Exception $e) {
+            return ApiResponse::error($e->getMessage(), null, 400)->toResponse();
         }
     }
 }

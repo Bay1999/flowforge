@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\WorkflowRun;
 use App\Models\StepRun;
+use App\Events\RunCompleted;
 use App\Services\Workflow\DagParser;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -53,14 +54,26 @@ class ExecuteWorkflowJob implements ShouldQueue
             }
 
             // Dispatch a job for each initial node
-            foreach ($initialNodes as $nodeId) {
-                ExecuteStepJob::dispatch($this->run, $nodeId);
+            if (empty($initialNodes)) {
+                // If there are nodes but no initial nodes, it might be a cycle (already caught by validate)
+                // or just an empty workflow.
+                if (count($dag['nodes']) === 0) {
+                    $this->run->update(['status' => 'completed', 'completed_at' => now()]);
+                    event(new RunCompleted($this->run->workflow_id, $this->run->id, $this->run->tenant_id, 'completed'));
+                } else {
+                    throw new \Exception("Workflow has nodes but no entry points found.");
+                }
+            } else {
+                foreach ($initialNodes as $nodeId) {
+                    ExecuteStepJob::dispatch($this->run, $nodeId);
+                }
             }
         } catch (\Exception $e) {
             $this->run->update([
                 'status' => 'failed',
                 'completed_at' => now()
             ]);
+            event(new RunCompleted($this->run->workflow_id, $this->run->id, $this->run->tenant_id, 'failed'));
             // Log error
             \App\Models\ExecutionLog::create([
                 'workflow_run_id' => $this->run->id,

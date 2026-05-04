@@ -16,12 +16,16 @@ class WorkflowDefinition extends Model
         'name', 
         'description', 
         'dag_json', 
+        'version',
+        'trigger_type',
+        'trigger_config',
         'is_active', 
         'created_by'
     ];
 
     protected $casts = [
         'dag_json' => 'array',
+        'trigger_config' => 'array',
         'is_active' => 'boolean',
     ];
 

@@ -58,7 +58,10 @@ class AuthController extends Controller
             return ApiResponse::error('Unauthorized', null, 401)->toResponse();
         }
 
+        $user = auth()->user();
+
         return ApiResponse::success([
+            'user' => $user,
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth()->factory()->getTTL() * 60
@@ -67,7 +70,8 @@ class AuthController extends Controller
 
     public function me()
     {
-        return ApiResponse::success(auth()->user())->toResponse();
+        $user = auth()->user();
+        return ApiResponse::success($user)->toResponse();
     }
 
     public function logout()
