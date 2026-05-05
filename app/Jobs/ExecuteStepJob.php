@@ -5,9 +5,14 @@ namespace App\Jobs;
 use App\Models\WorkflowRun;
 use App\Models\StepRun;
 use App\Models\ExecutionLog;
+use App\Events\StepStarted;
+use App\Events\StepCompleted;
+use App\Events\StepFailed;
+use App\Events\RunCompleted;
 use App\Services\Workflow\DagParser;
 use App\Services\Workflow\Executors\HttpExecutor;
 use App\Services\Workflow\Executors\DelayExecutor;
+use App\Services\Workflow\Executors\ScriptExecutor;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -48,6 +53,7 @@ class ExecuteStepJob implements ShouldQueue
         }
 
         $stepRun->update(['status' => 'running', 'started_at' => now(), 'retry_count' => $this->attempts() - 1]);
+        event(new StepStarted($this->run->workflow_id, $this->run->id, $this->stepId, $this->run->tenant_id));
 
         $workflow = $this->run->workflowDefinition;
         $dag = is_string($workflow->dag_json) ? json_decode($workflow->dag_json, true) : $workflow->dag_json;
@@ -87,6 +93,7 @@ class ExecuteStepJob implements ShouldQueue
                 'completed_at' => now(),
                 'output' => $output
             ]);
+            event(new StepCompleted($this->run->workflow_id, $this->run->id, $this->stepId, $this->run->tenant_id));
 
             ExecutionLog::create([
                 'workflow_run_id' => $this->run->id,
@@ -112,6 +119,7 @@ class ExecuteStepJob implements ShouldQueue
             } else {
                 // Laravel will automatically retry based on $this->tries and $this->backoff
                 $stepRun->update(['status' => 'failed', 'error' => $e->getMessage()]);
+                event(new StepFailed($this->run->workflow_id, $this->run->id, $this->stepId, $this->run->tenant_id, $e->getMessage()));
                 throw $e; // Throwing triggers the retry
             }
         }
@@ -122,6 +130,7 @@ class ExecuteStepJob implements ShouldQueue
         return match ($type) {
             'http' => new HttpExecutor(),
             'delay' => new DelayExecutor(),
+            'script' => new ScriptExecutor(),
             default => throw new Exception("Unknown step type: {$type}"),
         };
     }
@@ -165,16 +174,22 @@ class ExecuteStepJob implements ShouldQueue
         }
 
         // Check if entire workflow is completed
-        $totalSteps = count($dag['nodes']);
-        $completedSteps = StepRun::where('workflow_run_id', $this->run->id)
-            ->where('status', 'completed')
-            ->count();
+        // A workflow is completed when all its steps are 'completed'
+        // We use a refresh() to ensure we have the latest status from the database
+        if ($this->run->refresh()->status !== 'running') {
+            return;
+        }
 
-        if ($totalSteps === $completedSteps) {
+        $hasIncompleteSteps = StepRun::where('workflow_run_id', $this->run->id)
+            ->where('status', '!=', 'completed')
+            ->exists();
+        
+        if (!$hasIncompleteSteps) {
             $this->run->update([
                 'status' => 'completed',
                 'completed_at' => now()
             ]);
+            event(new RunCompleted($this->run->workflow_id, $this->run->id, $this->run->tenant_id, 'completed'));
         }
     }
 
@@ -185,10 +200,12 @@ class ExecuteStepJob implements ShouldQueue
             'completed_at' => now(),
             'error' => $error
         ]);
+        event(new StepFailed($this->run->workflow_id, $this->run->id, $this->stepId, $this->run->tenant_id, $error));
 
         $this->run->update([
             'status' => 'failed',
             'completed_at' => now()
         ]);
+        event(new RunCompleted($this->run->workflow_id, $this->run->id, $this->run->tenant_id, 'failed'));
     }
 }

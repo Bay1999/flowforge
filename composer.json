@@ -11,7 +11,8 @@
         "laravel/tinker": "^3.0",
         "predis/predis": "^3.4",
         "spatie/laravel-permission": "^7.4",
-        "tymon/jwt-auth": "^2.3"
+        "tymon/jwt-auth": "^2.3",
+        "inertiajs/inertia-laravel": "^2.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
