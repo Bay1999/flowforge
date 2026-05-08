@@ -137,16 +137,19 @@ class ExecuteStepJob implements ShouldQueue
 
     private function getPreviousOutputs(DagParser $parser, array $dag): array
     {
-        $parentNodes = $parser->getParentNodes($dag, $this->stepId);
         $outputs = [];
-        foreach ($parentNodes as $parentId) {
-            $parentRun = StepRun::where('workflow_run_id', $this->run->id)
-                ->where('step_id', $parentId)
-                ->first();
-            if ($parentRun && $parentRun->output) {
-                $outputs[$parentId] = $parentRun->output;
+        
+        // Fetch all completed step runs for the current workflow run
+        $completedRuns = StepRun::where('workflow_run_id', $this->run->id)
+            ->where('status', 'completed')
+            ->get();
+
+        foreach ($completedRuns as $run) {
+            if ($run->output !== null) {
+                $outputs[$run->step_id] = $run->output;
             }
         }
+
         return $outputs;
     }
 
