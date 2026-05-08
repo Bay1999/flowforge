@@ -4,9 +4,10 @@ import axios from 'axios';
 import { router } from '@inertiajs/react';
 import Layout from '../../Components/Layout';
 import WorkflowGraph from '../../Components/WorkflowGraph';
+import AiWorkflowBuilder from '../../Components/AiWorkflowBuilder';
 import { 
   Save, ArrowLeft, Clock, Zap, MousePointer2, 
-  FileJson, Info, AlertCircle, Copy, Code, Globe, Hourglass 
+  FileJson, Info, AlertCircle, Copy, Code, Globe, Hourglass, Sparkles 
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -143,6 +144,24 @@ const WorkflowsCreate = () => {
     }
   };
 
+  const handleAiApply = (result) => {
+    // Apply AI-generated DAG to the JSON editor
+    setJsonInput(JSON.stringify(result.dag, null, 2));
+    // Auto-fill name and description
+    setFormData(prev => ({
+      ...prev,
+      name: result.name || prev.name,
+      description: result.description || prev.description,
+    }));
+    Swal.fire({
+      icon: 'success',
+      title: 'AI Workflow Applied!',
+      text: `"${result.name}" has been loaded into the editor.`,
+      timer: 2500,
+      showConfirmButton: false,
+    });
+  };
+
   return (
     <Layout>
       <div className="max-w-[1600px] mx-auto space-y-6">
@@ -255,6 +274,9 @@ const WorkflowsCreate = () => {
                 </div>
               </div>
             </div>
+
+            {/* AI Workflow Builder */}
+            <AiWorkflowBuilder onApply={handleAiApply} />
 
             {/* JSON Editor Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">

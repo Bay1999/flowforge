@@ -33,4 +33,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('runs/{run}', [RunController::class, 'show']);
     Route::post('runs/{run}/cancel', [RunController::class, 'cancel']);
     Route::get('runs/{run}/logs', [RunController::class, 'logs']);
+
+    // AI-Powered Workflow Generation
+    Route::post('ai/generate-workflow', [\App\Http\Controllers\Api\AiWorkflowController::class, 'generate']);
 });
